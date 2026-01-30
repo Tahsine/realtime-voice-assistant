@@ -1,0 +1,20 @@
+# --- Backend / Python ---
+backend/venv/
+backend/.env.local
+backend/__pycache__/
+backend/*.py[cod]
+backend/KMS/logs/
+
+# --- Environnements globaux (au cas où) ---
+.env
+.env.local
+venv/
+ENV/
+bin/
+lib/
+
+# --- OS / Divers ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
