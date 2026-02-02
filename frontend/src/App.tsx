@@ -1,5 +1,22 @@
-import { LiveKitRoom, RoomAudioRenderer } from '@livekit/components-react';
+import '@livekit/components-styles';
+import { ConnectionState, LiveKitRoom, RoomAudioRenderer, useVoiceAssistant, ControlBar, Chat } from '@livekit/components-react';
 import { useConnection } from './hooks/useConnection';
+import { AgentAudioVisualizerBar } from './components/agents-ui/agent-audio-visualizer-bar';
+
+function AgentVisualizer() {
+  const { audioTrack, state } = useVoiceAssistant();
+
+  return (
+    <div className="flex justify-center py-6">
+      <AgentAudioVisualizerBar
+        size="lg"
+        barCount={5}
+        state={state}
+        audioTrack={audioTrack}
+      />
+    </div>
+  );
+}
 
 function App() {
   const { connectionDetails, isLoading, error } = useConnection();
@@ -17,22 +34,26 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen text-white">
       <h1 className="text-3xl font-bold text-center py-8">
-        🎤 Voice Support Assistant
+        Voice Support Assistant
       </h1>
       
       <LiveKitRoom
         serverUrl={connectionDetails.serverUrl}
         token={connectionDetails.participantToken}
-        connect={true}
+        connect={false}
+        audio={true}
+        video={false}
+        data-lk-theme="default"
       >
-        <div className="max-w-2xl mx-auto p-4">
-          <p className="text-center mb-4">
-            Room: {connectionDetails.roomName}
-          </p>
-          <RoomAudioRenderer />
-        </div>
+        <ConnectionState />
+        <RoomAudioRenderer />
+
+        <AgentVisualizer />
+        
+        <Chat/>
+        <ControlBar saveUserChoices={true} variation='minimal'/>
       </LiveKitRoom>
     </div>
   );

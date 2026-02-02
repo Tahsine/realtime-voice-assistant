@@ -1,7 +1,8 @@
 from dotenv import load_dotenv
 
 from livekit import agents, rtc
-from livekit.agents import AgentServer,AgentSession, Agent, room_io
+from livekit.agents import AgentServer,AgentSession, Agent, room_io, get_job_context
+from livekit.agents.llm import ImageContent
 from livekit.plugins import noise_cancellation, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
@@ -9,6 +10,9 @@ load_dotenv(".env.local")
 
 class VoiceAssistantAgent(Agent):
     def __init__(self) -> None:
+        self._latest_frame = None
+        self._video_stream = None
+        self._tasks = []
         super().__init__(
             instructions="""You are a helpful voice AI assistant.
             You eagerly assist users with their questions by providing information from your extensive knowledge.
