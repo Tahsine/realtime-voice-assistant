@@ -1,4 +1,4 @@
-livekit-agents[silero,turn-detector]
+livekit-agents[silero,turn-detector,google]
 livekit-plugins-noise-cancellation
 google-generativeai
 python-dotenv
