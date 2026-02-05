@@ -9,17 +9,17 @@ import {
   useMediaDeviceSelect,
 } from '@livekit/components-react';
 
-import { AgentAudioVisualizerBar } from '@/components/agents-ui/agent-audio-visualizer-bar';
-import { AgentTrackToggle } from '@/components/agents-ui/agent-track-toggle';
+import { AgentAudioVisualizerBar } from './agent-audio-visualizer-bar';
+import { AgentTrackToggle } from './agent-track-toggle';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '../ui/select';
 import { cn } from '../../lib/utils';
-import { toggleVariants } from '@/components/ui/toggle';
+import { toggleVariants } from '../ui/toggle';
 
 const selectVariants = cva(
   [
