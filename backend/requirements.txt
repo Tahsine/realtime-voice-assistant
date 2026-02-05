@@ -1,4 +1,4 @@
-livekit-agents[silero,turn-detector,google]
+livekit-agents[silero,turn-detector,google,deepgram,cartesia,elevenlabs,assemblyai]
 livekit-plugins-noise-cancellation
 google-generativeai
 python-dotenv

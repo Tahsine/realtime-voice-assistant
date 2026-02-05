@@ -121,3 +121,23 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Override LiveKit Control Bar defaults to remove unwanted borders/backgrounds */
+.lk-control-bar {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+/* Optional: Polish buttons to match glassmorphism if needed */
+.lk-button {
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  background-color: rgba(255, 255, 255, 0.03) !important;
+  backdrop-filter: blur(4px);
+}
+
+.lk-button:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}

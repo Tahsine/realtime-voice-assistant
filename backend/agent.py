@@ -1,14 +1,13 @@
 import asyncio
-import base64
 import logging
 from dotenv import load_dotenv
 
 from livekit import agents, rtc
 from livekit.agents import AgentServer, AgentSession, Agent, room_io, get_job_context
 from livekit.agents.llm import ImageContent, ChatContext, ChatMessage
-from livekit.agents.utils.images import encode, EncodeOptions, ResizeOptions
-from livekit.plugins import noise_cancellation, silero, google
+from livekit.plugins import noise_cancellation, silero, google, deepgram, cartesia
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
+from prompts import SYSTEM_PROMPT
 
 load_dotenv(".env.local")
 
@@ -22,11 +21,7 @@ class VoiceAssistantAgent(Agent):
         self._video_stream = None
         self._tasks = []
         super().__init__(
-            instructions="""You are a helpful voice AI assistant with vision capabilities.
-            You can see the user's screen when they share it.
-            When asked about what you see, describe the screen content accurately.
-            Your responses are concise, to the point, and without any complex formatting or punctuation including emojis, asterisks, or other symbols.
-            You are curious, friendly, and have a sense of humor."""
+            instructions=SYSTEM_PROMPT
         )
 
     async def on_enter(self):
@@ -61,47 +56,17 @@ class VoiceAssistantAgent(Agent):
     async def on_user_turn_completed(
         self, turn_ctx: ChatContext, new_message: ChatMessage
     ) -> None:
-        logger.info(f"on_user_turn_completed called. Latest frame exists: {self._latest_frame is not None}")
-        
-        # Add the latest video frame, if any, to the new message
+        """Add the latest video frame to the user's message before LLM processing."""
         if self._latest_frame:
             try:
-                # Save image to disk for debugging (still encode for saving)
-                import os
-                from datetime import datetime
-                image_bytes = encode(
-                    self._latest_frame,
-                    EncodeOptions(
-                        format="JPEG",
-                        resize_options=ResizeOptions(
-                            width=1024,
-                            height=1024,
-                            strategy="scale_aspect_fit"
-                        )
-                    )
-                )
-                debug_dir = os.path.join(os.path.dirname(__file__), "debug_frames")
-                os.makedirs(debug_dir, exist_ok=True)
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-                debug_path = os.path.join(debug_dir, f"frame_{timestamp}.jpg")
-                with open(debug_path, "wb") as f:
-                    f.write(image_bytes)
-                logger.info(f"DEBUG: Saved frame to {debug_path} ({len(image_bytes)} bytes)")
-                
-                # Pass VideoFrame directly to ImageContent (as per docs)
+                # Pass VideoFrame directly to ImageContent
                 img_content = ImageContent(image=self._latest_frame)
-                logger.info(f"ADDING FRAME DIRECTLY TO MESSAGE!")
                 new_message.content.append(img_content)
-                logger.info(f"DEBUG: content AFTER append: {len(new_message.content)} items")
-                
+                logger.info("Frame added to message")
             except Exception as e:
                 logger.error(f"Error adding frame: {e}")
-                import traceback
-                logger.error(traceback.format_exc())
             finally:
                 self._latest_frame = None
-        else:
-            logger.warning("No frame available to add to message")
 
     # Helper method to buffer the latest video frame from the user's track
     def _create_video_stream(self, track: rtc.Track):
@@ -139,9 +104,15 @@ async def voice_agent(ctx: agents.JobContext):
     logger.info(f"Created Google LLM instance: {llm_instance}")
     
     session = AgentSession(
-        stt="deepgram/nova-3:multi",
+        stt=deepgram.STTv2(
+            model="flux-general-en",
+            eager_eot_threshold=0.4,
+        ),
         llm=llm_instance,
-        tts="cartesia/sonic-3:9626c31c-bec5-4cca-baa8-f8ba9e84c8bc",
+        tts=cartesia.TTS(
+            model="sonic-3",
+            voice="f786b574-daa5-4673-aa0c-cbe3e8534c02",
+        ),  
         vad=silero.VAD.load(),
         turn_detection=MultilingualModel(),
     )
