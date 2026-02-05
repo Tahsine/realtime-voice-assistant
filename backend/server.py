@@ -14,7 +14,11 @@ app = FastAPI()
 # CORS pour permettre au frontend de se connecter
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For development purposes; restrict in production
+    allow_origins=[
+        "http://localhost:5173",
+        "https://iris-visual-intelligence-voice-assi.vercel.app/"
+        
+    ],  # For development purposes; restrict in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -87,6 +91,10 @@ async def get_connection_details(request: ConnectionRequest):
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/")
+def root():
+    return {"status": "API is running"}
 
 @app.get("/health")
 async def health_check():
