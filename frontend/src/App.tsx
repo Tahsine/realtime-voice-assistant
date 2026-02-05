@@ -4,7 +4,7 @@ import { ConnectionState as RoomConnectionState } from 'livekit-client';
 import { useConnection } from './hooks/useConnection';
 import { AgentAudioVisualizerBar } from './components/agents-ui/agent-audio-visualizer-bar';
 import { LucideWifi, LucideWifiOff, LucideLoader2, LucideGithub, LucidePlay, LucideAlertTriangle } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 function AgentVisualizer() {
   const { audioTrack, state } = useVoiceAssistant();
@@ -57,11 +57,20 @@ function StatusIndicator() {
 
 function DisconnectObserver({ onDisconnect }: { onDisconnect: () => void }) {
   const state = useConnectionState();
+  const hasConnected = useRef(false);
+
   useEffect(() => {
-    if (state === RoomConnectionState.Disconnected) {
+    if (state === RoomConnectionState.Connected) {
+      hasConnected.current = true;
+    }
+  }, [state]);
+
+  useEffect(() => {
+    if (hasConnected.current && state === RoomConnectionState.Disconnected) {
       onDisconnect();
     }
   }, [state, onDisconnect]);
+
   return null;
 }
 
@@ -90,7 +99,7 @@ function WelcomeScreen({ onStart }: { onStart: () => void }) {
         </div>
 
         {/* Description */}
-        <div className="space-y-4 text-gray-400 text-sm leading-relaxed px-4">
+        <div className="space-y-4 text-gray-400 text-sm leading-relaxed px-4 text-center">
           <p>
             Experience the future of multimodal AI. IRIS uses
             <span className="text-blue-400 font-semibold mx-1">Gemini 3 Flash</span>
@@ -147,9 +156,8 @@ function WelcomeScreen({ onStart }: { onStart: () => void }) {
   );
 }
 
-function App() {
+function VoiceAssistantInterface({ onDisconnected }: { onDisconnected: () => void }) {
   const { connectionDetails, isLoading, error } = useConnection();
-  const [isChatStarted, setIsChatStarted] = useState(false);
 
   if (isLoading) {
     return (
@@ -163,12 +171,75 @@ function App() {
   }
 
   if (error) {
-    return <div className="flex items-center justify-center min-h-screen bg-[#0a0a0a] text-red-500">Error: {error}</div>;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#0a0a0a] text-red-500 gap-4">
+        <p>Error: {error}</p>
+        <button onClick={onDisconnected} className="px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">Go Back</button>
+      </div>
+    );
   }
 
   if (!connectionDetails) {
-    return <div className="flex items-center justify-center min-h-screen bg-[#0a0a0a] text-gray-500">No connection details</div>;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#0a0a0a] text-gray-500 gap-4">
+        <p>No connection details</p>
+        <button onClick={onDisconnected} className="px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">Go Back</button>
+      </div>
+    );
   }
+
+  return (
+    <LiveKitRoom
+      serverUrl={connectionDetails.serverUrl}
+      token={connectionDetails.participantToken}
+      connect={true}
+      audio={true}
+      video={false}
+      data-lk-theme="default"
+      className="flex flex-col h-full w-full"
+    >
+      {/* Header - Transparent & Floating */}
+      <header className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-50">
+        <div className="flex items-center gap-4">
+          <img src="/logo.svg" alt="IRIS Logo" className="w-10 h-10 drop-shadow-[0_0_8px_rgba(96,165,250,0.4)]" />
+          <div className="flex flex-col">
+            <h1 className="text-3xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 drop-shadow-sm">
+              IRIS
+            </h1>
+            <span className="text-[10px] tracking-[0.2em] text-blue-500/60 font-medium uppercase mt-0.5">
+              Visual Intelligence
+            </span>
+          </div>
+        </div>
+        <StatusIndicator />
+      </header>
+
+      {/* Main Content - Centered */}
+      <main className="flex-1 flex flex-col items-center justify-center relative z-0">
+        {/* Background Ambient Glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vh] h-[80vh] bg-blue-900/10 rounded-full blur-[120px] pointer-events-none" />
+        <AgentVisualizer />
+      </main>
+
+      {/* Footer - Controls */}
+      <footer className="absolute bottom-10 left-0 right-0 flex justify-center z-50 pointer-events-none">
+        <div className="pointer-events-auto bg-black/40 backdrop-blur-xl border border-white/5 rounded-2xl p-2 shadow-2xl hover:bg-black/50 transition-colors duration-300">
+          <ControlBar
+            saveUserChoices={true}
+            variation='minimal'
+            controls={{ chat: false, screenShare: true, camera: false, microphone: true, leave: true, settings: false }} // Explicit controls
+          />
+        </div>
+      </footer>
+
+      <DisconnectObserver onDisconnect={onDisconnected} />
+      <RoomAudioRenderer />
+    </LiveKitRoom>
+  );
+}
+
+function App() {
+  const [isChatStarted, setIsChatStarted] = useState(false);
 
   if (!isChatStarted) {
     return <WelcomeScreen onStart={() => setIsChatStarted(true)} />;
@@ -176,52 +247,7 @@ function App() {
 
   return (
     <div className="flex flex-col h-screen w-full bg-[#0a0a0a] text-white overflow-hidden selection:bg-blue-500/30">
-      <LiveKitRoom
-        serverUrl={connectionDetails.serverUrl}
-        token={connectionDetails.participantToken}
-        connect={true}
-        audio={true}
-        video={false}
-        data-lk-theme="default"
-        className="flex flex-col h-full w-full"
-      >
-        {/* Header - Transparent & Floating */}
-        <header className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-50">
-          <div className="flex items-center gap-4">
-            <img src="/logo.svg" alt="IRIS Logo" className="w-10 h-10 drop-shadow-[0_0_8px_rgba(96,165,250,0.4)]" />
-            <div className="flex flex-col">
-              <h1 className="text-3xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 drop-shadow-sm">
-                IRIS
-              </h1>
-              <span className="text-[10px] tracking-[0.2em] text-blue-500/60 font-medium uppercase mt-0.5">
-                Visual Intelligence
-              </span>
-            </div>
-          </div>
-          <StatusIndicator />
-        </header>
-
-        {/* Main Content - Centered */}
-        <main className="flex-1 flex flex-col items-center justify-center relative z-0">
-          {/* Background Ambient Glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vh] h-[80vh] bg-blue-900/10 rounded-full blur-[120px] pointer-events-none" />
-          <AgentVisualizer />
-        </main>
-
-        {/* Footer - Controls */}
-        <footer className="absolute bottom-10 left-0 right-0 flex justify-center z-50 pointer-events-none">
-          <div className="pointer-events-auto bg-black/40 backdrop-blur-xl border border-white/5 rounded-2xl p-2 shadow-2xl hover:bg-black/50 transition-colors duration-300">
-            <ControlBar
-              saveUserChoices={true}
-              variation='minimal'
-              controls={{ chat: false, screenShare: true, camera: false, microphone: true, leave: true, settings: false }} // Explicit controls
-            />
-          </div>
-        </footer>
-
-        <DisconnectObserver onDisconnect={() => setIsChatStarted(false)} />
-        <RoomAudioRenderer />
-      </LiveKitRoom>
+      <VoiceAssistantInterface onDisconnected={() => setIsChatStarted(false)} />
     </div>
   );
 }

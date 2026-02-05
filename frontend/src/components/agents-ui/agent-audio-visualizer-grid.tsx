@@ -1,6 +1,6 @@
 'use client';
 
-import React, {
+import {
   type ReactNode,
   type CSSProperties,
   memo,
@@ -17,7 +17,7 @@ import {
   type TrackReferenceOrPlaceholder,
   useMultibandTrackVolume,
 } from '@livekit/components-react';
-import { cn } from '@/lib/utils';
+import { cn } from '../../lib/utils';
 import {
   type Coordinate,
   useAgentAudioVisualizerGridAnimator,
