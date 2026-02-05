@@ -4,7 +4,7 @@ import { ConnectionState as RoomConnectionState } from 'livekit-client';
 import { useConnection } from './hooks/useConnection';
 import { AgentAudioVisualizerBar } from './components/agents-ui/agent-audio-visualizer-bar';
 import { LucideWifi, LucideWifiOff, LucideLoader2, LucideGithub, LucidePlay, LucideAlertTriangle } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 function AgentVisualizer() {
   const { audioTrack, state } = useVoiceAssistant();
@@ -18,7 +18,6 @@ function AgentVisualizer() {
           barCount={7}
           state={state}
           audioTrack={audioTrack}
-          barColor="rgb(96, 165, 250)" // blue-400
         />
       </div>
     </div>
@@ -56,6 +55,16 @@ function StatusIndicator() {
   );
 }
 
+function DisconnectObserver({ onDisconnect }: { onDisconnect: () => void }) {
+  const state = useConnectionState();
+  useEffect(() => {
+    if (state === RoomConnectionState.Disconnected) {
+      onDisconnect();
+    }
+  }, [state, onDisconnect]);
+  return null;
+}
+
 function WelcomeScreen({ onStart }: { onStart: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#0a0a0a] text-white p-6 relative overflow-hidden">
@@ -67,14 +76,17 @@ function WelcomeScreen({ onStart }: { onStart: () => void }) {
 
       <div className="max-w-md w-full z-10 flex flex-col items-center text-center space-y-8 animate-in fade-in zoom-in duration-500">
 
-        {/* Title */}
-        <div className="space-y-2">
-          <h1 className="text-5xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 drop-shadow-sm">
-            IRIS
-          </h1>
-          <p className="text-sm tracking-[0.3em] text-blue-500/80 font-medium uppercase">
-            Visual Intelligence
-          </p>
+        {/* Logo and Title */}
+        <div className="space-y-4 flex flex-col items-center">
+          <img src="/logo.svg" alt="IRIS Logo" className="w-20 h-20 drop-shadow-[0_0_15px_rgba(96,165,250,0.5)]" />
+          <div className="space-y-2">
+            <h1 className="text-5xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 drop-shadow-sm">
+              IRIS
+            </h1>
+            <p className="text-sm tracking-[0.3em] text-blue-500/80 font-medium uppercase text-center">
+              Visual Intelligence
+            </p>
+          </div>
         </div>
 
         {/* Description */}
@@ -175,13 +187,16 @@ function App() {
       >
         {/* Header - Transparent & Floating */}
         <header className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-50">
-          <div className="flex flex-col">
-            <h1 className="text-3xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 drop-shadow-sm">
-              IRIS
-            </h1>
-            <span className="text-[10px] tracking-[0.2em] text-blue-500/60 font-medium uppercase mt-0.5">
-              Visual Intelligence
-            </span>
+          <div className="flex items-center gap-4">
+            <img src="/logo.svg" alt="IRIS Logo" className="w-10 h-10 drop-shadow-[0_0_8px_rgba(96,165,250,0.4)]" />
+            <div className="flex flex-col">
+              <h1 className="text-3xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 drop-shadow-sm">
+                IRIS
+              </h1>
+              <span className="text-[10px] tracking-[0.2em] text-blue-500/60 font-medium uppercase mt-0.5">
+                Visual Intelligence
+              </span>
+            </div>
           </div>
           <StatusIndicator />
         </header>
@@ -195,7 +210,7 @@ function App() {
 
         {/* Footer - Controls */}
         <footer className="absolute bottom-10 left-0 right-0 flex justify-center z-50 pointer-events-none">
-          <div className="pointer-events-auto bg-black/40 backdrop-blur-xl rounded-2xl p-2 shadow-2xl hover:bg-black/50 transition-colors duration-300">
+          <div className="pointer-events-auto bg-black/40 backdrop-blur-xl border border-white/5 rounded-2xl p-2 shadow-2xl hover:bg-black/50 transition-colors duration-300">
             <ControlBar
               saveUserChoices={true}
               variation='minimal'
@@ -204,6 +219,7 @@ function App() {
           </div>
         </footer>
 
+        <DisconnectObserver onDisconnect={() => setIsChatStarted(false)} />
         <RoomAudioRenderer />
       </LiveKitRoom>
     </div>
