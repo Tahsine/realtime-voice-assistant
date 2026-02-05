@@ -16,8 +16,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "https://iris-visual-intelligence-voice-assi.vercel.app/"
-        
+        "https://iris-visual-intelligence-voice-assi.vercel.app"
     ],  # For development purposes; restrict in production
     allow_credentials=True,
     allow_methods=["*"],
